@@ -10,7 +10,7 @@
 
   <groupId>nz.net.osnz.common</groupId>
   <artifactId>template-scraper</artifactId>
-  <version>3.1-SNAPSHOT</version>
+  <version>3.1</version>
   <packaging>jar</packaging>
   
   <name>Open Source New Zealand : template-scraper</name>
@@ -82,7 +82,7 @@
     <url>https://github.com/OpenSourceNZ/template-scraper</url>
     <connection>scm:git:git@github.com:OpenSourceNZ/template-scraper.git</connection>
     <developerConnection>scm:git:git@github.com:OpenSourceNZ/template-scraper.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>template-scraper-3.1</tag>
   </scm>
 
 </project>
