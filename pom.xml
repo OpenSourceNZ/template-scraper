@@ -10,7 +10,7 @@
 
   <groupId>nz.net.osnz.common</groupId>
   <artifactId>template-scraper</artifactId>
-  <version>3.2-SNAPSHOT</version>
+  <version>3.1-SNAPSHOT</version>
   <packaging>jar</packaging>
   
   <name>Open Source New Zealand : template-scraper</name>
@@ -19,7 +19,7 @@
 
   <properties>
     <javax-servlet-api.version>3.0.1</javax-servlet-api.version>
-    <jsoup.version>[1.7.3]</jsoup.version>
+    <jsoup.version>[1.7.2]</jsoup.version>
     <spring.version>3.2.4.RELEASE</spring.version>
     <slf4j-api.version>1.7.5</slf4j-api.version>
     <jsp-api.version>2.1</jsp-api.version>
