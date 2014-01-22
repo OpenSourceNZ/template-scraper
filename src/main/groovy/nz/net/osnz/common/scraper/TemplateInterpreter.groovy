@@ -1,11 +1,17 @@
 package nz.net.osnz.common.scraper
 
+import nz.net.osnz.common.scraper.processor.BeforeParseProcessor
+import org.apache.commons.lang3.StringUtils
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.springframework.util.StringUtils
+import org.springframework.beans.factory.annotation.Autowired
+
 
 class TemplateInterpreter {
+
+    @Autowired(required = false)
+    protected List<BeforeParseProcessor> parseProcessors;
 
     /**
      * The parsed document
@@ -18,22 +24,39 @@ class TemplateInterpreter {
     private ScraperLayout layout;
 
     /**
+     * The list of resources will be removed from JSoup document
+     */
+    private List<String> excludeResources = [];
+
+    /**
      * Layout information
      *
      * @param layout is the layout to use
      */
     public TemplateInterpreter(ScraperLayout layout) {
+
         if (layout == null) {
             throw new IllegalArgumentException("Not a valid layout instance");
         }
-        this.layout = layout;
-    }
 
+        this.layout = layout;
+
+        this.layout.filter.each {
+            if (StringUtils.isNotBlank(it)) {
+                if (it.indexOf(',') >= 0) {
+                    excludeResources.addAll(encodeAsRegularExpression(it).split(','))
+                } else {
+                    excludeResources.add(encodeAsRegularExpression(it))
+                }
+            }
+        }
+
+    }
 
     /**
      * Retrieve the template content
      */
-    public Document getTemplateContent(boolean doRefresh=false) {
+    public Document getTemplateContent(boolean doRefresh = false) {
 
         if (!parsedDoc[layout] || doRefresh) {
 
@@ -49,15 +72,18 @@ class TemplateInterpreter {
                 // remove the analytics block
                 removeAnalyticsScriptBlock(doc)
 
-                // remove resources from header
-                removeIgnoredIncludes(doc, layout.filter)
-
                 // sanitize stylesheet urls
                 doc.select("[href]").each {
                     node -> rebaseAssetForNode(node, "href")
                 }
                 doc.select("[src]").each {
                     node -> rebaseAssetForNode(node, "src")
+                }
+
+                doFilterResources(doc)
+
+                parseProcessors?.each { BeforeParseProcessor processor ->
+                    processor.perform(doc)
                 }
 
                 parsedDoc[layout] = doc
@@ -80,20 +106,20 @@ class TemplateInterpreter {
     /**
      * Get the university body
      *
-     * @param leftBar  show the left
+     * @param leftBar show the left
      * @param rightBar
      * @param content
      * @return
      */
-    public String getBodyWithContent(String container, String content, boolean leftBar=false, String leftBarContainerId='leftBar', boolean rightBar=false, String rightBarContainerId='rightBar') {
+    public String getBodyWithContent(String container, String content, boolean leftBar = false, String leftBarContainerId = 'leftBar', boolean rightBar = false, String rightBarContainerId = 'rightBar') {
         Document freshDoc = this.getTemplateContent().clone()
 
         if (!leftBar && leftBarContainerId) {
-            freshDoc.select("#${leftBarContainerId}") ?.remove()
+            freshDoc.select("#${leftBarContainerId}")?.remove()
         }
 
         if (!rightBar && rightBarContainerId) {
-            freshDoc.select("#${rightBarContainerId}") ?.remove()
+            freshDoc.select("#${rightBarContainerId}")?.remove()
         }
 
         if (!StringUtils.isEmpty(this.layout.container)) {
@@ -106,32 +132,46 @@ class TemplateInterpreter {
     }
 
     /**
-     * Remove a number of script includes from the header document to take
-     * back control over which javascript libraries are included.
+     * Remove those required excluded resources
      *
-     * @param uri is a list of uris to remove
+     * @param doc - JSoup document to go through
      */
-    protected void removeIgnoredIncludes(Document doc, String... filters) {
-        removeIgnoredIncludes(doc, filters);
+    protected void doFilterResources(Document doc) {
+        def skipResources = []
+
+        doc.select('link[type=text/css]').each { Element node ->
+            if (isSkip(node.attr('href'))) {
+                skipResources.add(node)
+            }
+        }
+
+        doc.select('script').each { Element node ->
+            if (StringUtils.isBlank(node.attr('src')) || isSkip(node.attr('src'))) {
+                skipResources.add(node)
+            }
+        }
+
+        removeSkipResources(skipResources)
     }
 
-    protected void removeIgnoredIncludes(Document doc, List<String> filters) {
-        filters ?.each {
-            String location->
-                doc.select("script").findAll {
-                    Element element->
-                        element.attr('src').toLowerCase().trim().find(location.trim()) != null
-                }*.remove()
+    /**
+     * Remove skipp scripts from the given document
+     *
+     * @param skipResources is the list of skip resources need to be removed
+     */
+    protected void removeSkipResources(List<Element> skipResources) {
+        skipResources.each { Element element ->
+            element.remove()
         }
     }
 
     /**
      * Run closure on nodes that have analytics information
      *
-     * @param doc     is the jsoup document to go through
+     * @param doc is the jsoup document to go through
      */
     protected void removeAnalyticsScriptBlock(Document doc) {
-        for ( Element node : doc.select("script") ) {
+        for (Element node : doc.select("script")) {
             if (hasAnalyticsInformation(node)) {
                 node.remove();
             }
@@ -148,7 +188,6 @@ class TemplateInterpreter {
         return node.html().contains("_setAccount");
     }
 
-
     /**
      * Sanitize the node
      *
@@ -157,8 +196,8 @@ class TemplateInterpreter {
      */
     protected void rebaseAssetForNode(org.jsoup.nodes.Node node, String attr) {
         String url = node.attr(attr);
-        if ( !url.contains(":") ) {
-            node.attr(attr, this.getRelativeLinksBase() + url);
+        if (!isAbsoluteURL(url)) {
+            node.attr(attr, this.getRelativeLinksBase() + url)
         }
     }
 
@@ -181,6 +220,52 @@ class TemplateInterpreter {
      */
     protected String getTemplateBaseLocation() {
         return layout.getUrl();
+    }
+
+    /**
+     * Validate whether the given resource is excluded or not
+     * @param resource - given resource
+     * @return - true means the given resource is excluded
+     */
+    protected boolean isSkip(String resource) {
+
+        boolean skip = false
+
+        excludeResources.each {
+            while (resource.contains('#') || resource.contains('?')) {
+                if (resource.contains('#')) {
+                    resource = resource.substring(0, resource.indexOf('#')).toLowerCase()
+                }
+                if (resource.contains('?')) {
+                    resource = resource.substring(0, resource.indexOf('?')).toLowerCase()
+                }
+            }
+            skip |= resource.matches(it)
+        }
+        return skip
+    }
+
+    /**
+     * Verify whether the given URL is an absolute URL or not
+     * @param url - given URL to verify
+     * @return - true if the give URL is an absolute URL
+     */
+    protected boolean isAbsoluteURL(String url) {
+        try {
+            return StringUtils.isNotBlank(url) && (new URI(url)).absolute
+        } catch (URISyntaxException ex) {
+            return false
+        }
+    }
+
+    /**
+     * Encode a given string as regular expression
+     *
+     * @param - given string to encode
+     * @return - a string can be used in regular expression
+     */
+    protected String encodeAsRegularExpression(String value) {
+        return value.replace('.', '\\.').replace('*', '.*').replace(' ', '').toLowerCase()
     }
 
 }

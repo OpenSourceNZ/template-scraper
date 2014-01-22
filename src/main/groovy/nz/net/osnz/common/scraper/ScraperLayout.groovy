@@ -25,7 +25,7 @@ class ScraperLayout {
     this.assets = assets;
 
     if ( StringUtils.isNotBlank(filter) ) {
-      if ( filter.indexOf(',') ) {
+      if ( filter.contains(',') ) {
         this.filter = StringUtils.split( filter, ',' ).toList()
       } else {
         this.filter = [ StringUtils.trimToEmpty(filter) ]
