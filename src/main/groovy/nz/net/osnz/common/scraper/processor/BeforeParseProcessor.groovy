@@ -10,7 +10,6 @@ import java.lang.annotation.Inherited
  *
  * Introduce some behaviours before the scraper parse and render the HTML
  */
-@Component
 interface BeforeParseProcessor {
 
     /**
