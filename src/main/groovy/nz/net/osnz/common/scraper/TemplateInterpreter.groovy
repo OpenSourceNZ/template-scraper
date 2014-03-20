@@ -1,17 +1,12 @@
 package nz.net.osnz.common.scraper
 
-import nz.net.osnz.common.scraper.processor.BeforeParseProcessor
+import nz.net.osnz.common.scraper.util.TemplateLayout
 import org.apache.commons.lang3.StringUtils
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.springframework.beans.factory.annotation.Autowired
-
 
 class TemplateInterpreter {
-
-    @Autowired(required = false)
-    protected List<BeforeParseProcessor> parseProcessors;
 
     /**
      * The parsed document
@@ -22,11 +17,6 @@ class TemplateInterpreter {
      * Layout configuration
      */
     private ScraperLayout layout;
-
-    /**
-     * The list of resources will be removed from JSoup document
-     */
-    private List<String> excludeResources = [];
 
     /**
      * Layout information
@@ -40,16 +30,6 @@ class TemplateInterpreter {
         }
 
         this.layout = layout;
-
-        this.layout.filter.each {
-            if (StringUtils.isNotBlank(it)) {
-                if (it.indexOf(',') >= 0) {
-                    excludeResources.addAll(encodeAsRegularExpression(it).split(','))
-                } else {
-                    excludeResources.add(encodeAsRegularExpression(it))
-                }
-            }
-        }
 
     }
 
@@ -80,12 +60,6 @@ class TemplateInterpreter {
                     node -> rebaseAssetForNode(node, "src")
                 }
 
-                doFilterResources(doc)
-
-                parseProcessors?.each { BeforeParseProcessor processor ->
-                    processor.perform(doc)
-                }
-
                 parsedDoc[layout] = doc
             }
         }
@@ -111,47 +85,25 @@ class TemplateInterpreter {
      * @param content
      * @return
      */
-    public String getBodyWithContent(String container, String content, boolean leftBar = false, String leftBarContainerId = 'leftBar', boolean rightBar = false, String rightBarContainerId = 'rightBar') {
+    public String getBodyWithContent(String content, TemplateLayout templateLayout) {
+
         Document freshDoc = this.getTemplateContent().clone()
 
-        if (!leftBar && leftBarContainerId) {
-            freshDoc.select("#${leftBarContainerId}")?.remove()
+        if (!templateLayout.displayLeftBar && templateLayout.leftBarContainerId) {
+            freshDoc.select("#${templateLayout.leftBarContainerId}")?.remove()
         }
 
-        if (!rightBar && rightBarContainerId) {
-            freshDoc.select("#${rightBarContainerId}")?.remove()
+        if (!templateLayout.displayRightBar && templateLayout.rightBarContainerId) {
+            freshDoc.select("#${templateLayout.rightBarContainerId}")?.remove()
         }
 
         if (!StringUtils.isEmpty(this.layout.container)) {
-            container = this.layout.container
+            templateLayout.mainContainerId = this.layout.container
         }
 
-        freshDoc.select("#${container}").html(content)
+        freshDoc.select("#${templateLayout.mainContainerId}").html(content)
 
         return freshDoc.select("body").html()
-    }
-
-    /**
-     * Remove those required excluded resources
-     *
-     * @param doc - JSoup document to go through
-     */
-    protected void doFilterResources(Document doc) {
-        def skipResources = []
-
-        doc.select('link[type=text/css]').each { Element node ->
-            if (isSkip(node.attr('href'))) {
-                skipResources.add(node)
-            }
-        }
-
-        doc.select('script').each { Element node ->
-            if (StringUtils.isBlank(node.attr('src')) || isSkip(node.attr('src'))) {
-                skipResources.add(node)
-            }
-        }
-
-        removeSkipResources(skipResources)
     }
 
     /**
@@ -223,29 +175,6 @@ class TemplateInterpreter {
     }
 
     /**
-     * Validate whether the given resource is excluded or not
-     * @param resource - given resource
-     * @return - true means the given resource is excluded
-     */
-    protected boolean isSkip(String resource) {
-
-        boolean skip = false
-
-        excludeResources.each {
-            while (resource.contains('#') || resource.contains('?')) {
-                if (resource.contains('#')) {
-                    resource = resource.substring(0, resource.indexOf('#')).toLowerCase()
-                }
-                if (resource.contains('?')) {
-                    resource = resource.substring(0, resource.indexOf('?')).toLowerCase()
-                }
-            }
-            skip |= resource.matches(it)
-        }
-        return skip
-    }
-
-    /**
      * Verify whether the given URL is an absolute URL or not
      * @param url - given URL to verify
      * @return - true if the give URL is an absolute URL
@@ -256,16 +185,6 @@ class TemplateInterpreter {
         } catch (URISyntaxException ex) {
             return false
         }
-    }
-
-    /**
-     * Encode a given string as regular expression
-     *
-     * @param - given string to encode
-     * @return - a string can be used in regular expression
-     */
-    protected String encodeAsRegularExpression(String value) {
-        return value.replace('.', '\\.').replace('*', '.*').replace(' ', '').toLowerCase()
     }
 
 }

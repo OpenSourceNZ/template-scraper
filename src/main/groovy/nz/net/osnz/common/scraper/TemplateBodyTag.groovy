@@ -1,137 +1,108 @@
 package nz.net.osnz.common.scraper
 
+import nz.net.osnz.common.scraper.util.SpringBodyTagSupportAdapter
+import nz.net.osnz.common.scraper.util.TemplateLayout
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import javax.inject.Inject
 import javax.servlet.jsp.JspWriter
 import javax.servlet.jsp.tagext.BodyContent
-import javax.servlet.jsp.tagext.BodyTagSupport
 
-class TemplateBodyTag extends BodyTagSupport {
+class TemplateBodyTag extends SpringBodyTagSupportAdapter {
 
-  /**
-   * Logger
-   */
-  private static final Logger LOG = LoggerFactory.getLogger(TemplateBodyTag.class);
+    /**
+     * Logger
+     */
+    private static final Logger LOG = LoggerFactory.getLogger(TemplateBodyTag.class);
 
-  /**
-   * the ID of container will be replaced
-   */
-  private String container = "main";
+    TemplateLayout templateLayout = new TemplateLayout()
 
-  /**
-   * Has left bar?
-   */
-  private boolean leftBar = true;
+    @Inject ScraperConfiguration scraperConfiguration
 
-  /**
-   * the container ID of left bar
-   */
-  private String leftBarContainerId = 'leftBar'
+    /**
+     * Called after this tag was closed off.
+     *
+     * @return skip_body so we won't render the body.
+     */
+    @Override
+    int wrappedDoAfterBody() {
 
-  /**
-   * Has right bar?
-   */
-  private boolean rightBar = true;
+        BodyContent body = this.getBodyContent()
+        JspWriter out = body.getEnclosingWriter()
 
-  /**
-   * the container ID of right bar
-   */
-  private String rightBarContainerId = 'rightBar'
+        TemplateInterpreter templateInterpreter = new TemplateInterpreter(scraperConfiguration.getLayoutInformation(this.layout))
 
-  /**
-   * Layout to use
-   */
-  private String layout = ScraperLayout.DEFAULT_LAYOUT;
+        try {
+            out.print(templateInterpreter.getBodyWithContent(body.string, templateLayout))
+        }
+        catch (IOException ioEx) {
+            LOG.info("Unable to properly parse the template body for layout ${this.layout}")
+        }
 
-
-  /**
-   * Called after this tag was closed off.
-   *
-   * @return skip_body so we won't render the body.
-   */
-  @Override
-  int doAfterBody() {
-
-    BodyContent body = this.getBodyContent()
-    JspWriter out = body.getEnclosingWriter()
-
-    ScraperConfigurationLoader loader = new ScraperConfigurationLoader()
-    ScraperConfiguration scraper = loader.getConfiguration(pageContext.servletContext)
-    TemplateInterpreter templateInterpreter = new TemplateInterpreter(scraper.getLayoutInformation(this.layout))
-
-    try {
-      out.print(
-        templateInterpreter.getBodyWithContent(this.container, body.string, this.leftBar, this.leftBarContainerId, this.rightBar, this.rightBarContainerId)
-      )
-    }
-    catch (IOException ioEx) {
-      LOG.info("Unable to properly parse the university body for layout ${this.layout}");
+        return SKIP_BODY
     }
 
-    return SKIP_BODY;
-  }
+    /**
+     * Attribute setter and getter
+     */
 
-  void setContainer(String container) {
-    this.container = container;
-  }
-
-  public String getContainer() {
-    return this.container;
-  }
-
-  boolean getRightBar() {
-    return rightBar
-  }
-
-  void setRightBar(boolean rightBar) {
-    this.rightBar = rightBar
-  }
-
-  void setRightBarId(String rightBarId) {
-    this.rightBarContainerId = rightBarId
-  }
-
-  String getRightBarId() {
-    return this.rightBarContainerId
-  }
-
-  boolean getLeftBar() {
-    return leftBar
-  }
-
-  void setLeftBar(boolean leftBar) {
-    this.leftBar = leftBar
-  }
-
-  String getLeftBarId() {
-    return this.leftBarContainerId
-  }
-
-  void setLeftBarId(String leftBarId) {
-    this.leftBarContainerId = leftBarId
-  }
-
-  String getLayout() {
-    return layout ?: "default"
-  }
-
-  /**
-   * Set the layout. Will check validity of layout name
-   *
-   * @param layout is the layout name to use.
-   */
-  void setLayout(String layout) {
-    ScraperConfigurationLoader loader = new ScraperConfigurationLoader();
-    ScraperConfiguration sConfig = loader.getConfiguration(pageContext.servletContext)
-
-    if (sConfig.isValidLayout(layout)) {
-      this.layout = layout
+    public void setContainer(String container) {
+        templateLayout.mainContainerId = container
     }
-    else {
-      throw new IllegalArgumentException("No such layout defined in the scraper configuration")
+
+    public String getContainer() {
+        return templateLayout.mainContainerId
     }
-  }
+
+    public boolean getRightBar() {
+        return templateLayout.displayRightBar
+    }
+
+    public void setRightBar(boolean rightBar) {
+        templateLayout.displayRightBar = rightBar
+    }
+
+    public void setRightBarId(String rightBarId) {
+        templateLayout.rightBarContainerId = rightBarId
+    }
+
+    public String getRightBarId() {
+        return templateLayout.rightBarContainerId
+    }
+
+    public boolean getLeftBar() {
+        return templateLayout.displayLeftBar
+    }
+
+    public void setLeftBar(boolean leftBar) {
+        templateLayout.displayLeftBar = leftBar
+    }
+
+    public String getLeftBarId() {
+        return templateLayout.leftBarContainerId
+    }
+
+    public void setLeftBarId(String leftBarId) {
+        templateLayout.leftBarContainerId = leftBarId
+    }
+
+    public String getLayout() {
+        return templateLayout?.layout ?: ScraperLayout.DEFAULT_LAYOUT
+    }
+
+    /**
+     * Set the layout. Will check validity of layout name
+     *
+     * @param layout is the layout name to use.
+     */
+    public void setLayout(String layout) {
+        if (scraperConfiguration.isValidLayout(layout)) {
+            templateLayout.layout = layout
+        } else {
+            throw new IllegalArgumentException("No such layout defined in the scraper configuration")
+        }
+    }
 
 
 }

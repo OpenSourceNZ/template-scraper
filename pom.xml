@@ -35,7 +35,7 @@
 
         <dependency>
             <groupId>nz.net.osnz.composite</groupId>
-            <artifactId>composite-spring</artifactId>
+            <artifactId>composite-spring-web</artifactId>
             <version>[3,4)</version>
         </dependency>
 
