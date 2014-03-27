@@ -5,10 +5,6 @@
 
     <name>osnz_template_scraper</name>
 
-    <listener>
-        <listener-class>nz.net.osnz.common.scraper.PeriodicTemplateScraperTask</listener-class>
-    </listener>
-
     <jsp-config>
         <taglib>
             <taglib-uri>http://osnz.net.nz/tld/scraper</taglib-uri>

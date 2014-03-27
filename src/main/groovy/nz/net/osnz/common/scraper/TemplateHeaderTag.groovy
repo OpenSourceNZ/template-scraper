@@ -17,7 +17,7 @@ public class TemplateHeaderTag extends SpringBodyTagSupportAdapter {
     private boolean isDebug = false;
 
     @Override
-    public int doStartTag() {
+    public int wrappedDoStartTag() {
         TemplateInterpreter templateInterpreter = new TemplateInterpreter(scraperConfiguration.getLayoutInformation(this.layout))
 
         if (this.debug) {
@@ -35,7 +35,7 @@ public class TemplateHeaderTag extends SpringBodyTagSupportAdapter {
      * @return skip_body so we won't render the body.
      */
     @Override
-    public int doAfterBody() {
+    public int wrappedDoAfterBody() {
         if (this.debug) {
             pageContext.getOut().write("<!-- scraper header end -->");
         }

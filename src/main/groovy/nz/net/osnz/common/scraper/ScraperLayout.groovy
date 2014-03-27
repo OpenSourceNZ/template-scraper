@@ -1,8 +1,5 @@
 package nz.net.osnz.common.scraper
 
-import org.apache.commons.lang3.StringUtils
-
-
 class ScraperLayout {
 
     public static final String DEFAULT_LAYOUT = "default";
