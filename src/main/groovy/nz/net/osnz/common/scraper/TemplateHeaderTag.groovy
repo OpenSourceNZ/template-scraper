@@ -1,5 +1,7 @@
 package nz.net.osnz.common.scraper
 
+import nz.net.osnz.common.scraper.polisher.ContentPolisher
+import nz.net.osnz.common.scraper.polisher.ElementsPolisher
 import nz.net.osnz.common.scraper.util.SpringBodyTagSupportAdapter
 
 import javax.inject.Inject
@@ -8,6 +10,10 @@ import javax.inject.Inject
 public class TemplateHeaderTag extends SpringBodyTagSupportAdapter {
 
     @Inject ScraperConfiguration scraperConfiguration
+
+    @Inject List<ContentPolisher> contentPolisherList
+
+    @Inject List<ElementsPolisher> elementsPolisherList
 
     /**
      * Layout to use
@@ -19,6 +25,10 @@ public class TemplateHeaderTag extends SpringBodyTagSupportAdapter {
     @Override
     public int wrappedDoStartTag() {
         TemplateInterpreter templateInterpreter = new TemplateInterpreter(scraperConfiguration.getLayoutInformation(this.layout))
+
+        templateInterpreter.setContentPolisher(contentPolisherList)
+
+        templateInterpreter.setElementsPolisher(elementsPolisherList)
 
         if (this.debug) {
             pageContext.getOut().write("<!-- scraper header start -->");

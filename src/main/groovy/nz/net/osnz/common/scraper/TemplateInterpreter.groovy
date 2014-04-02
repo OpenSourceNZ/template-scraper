@@ -1,10 +1,13 @@
 package nz.net.osnz.common.scraper
 
+import nz.net.osnz.common.scraper.polisher.ContentPolisher
+import nz.net.osnz.common.scraper.polisher.ElementsPolisher
 import nz.net.osnz.common.scraper.util.TemplateLayout
 import org.apache.commons.lang3.StringUtils
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 
 class TemplateInterpreter {
 
@@ -19,6 +22,16 @@ class TemplateInterpreter {
     private ScraperLayout layout;
 
     /**
+     * Some Elements polishers to polish the elements
+     */
+    List<ElementsPolisher> elementsPolishers
+
+    /**
+     * Some content polishers to polish the HTML content
+     */
+    List<ContentPolisher> contentPolishers
+
+    /**
      * Layout information
      *
      * @param layout is the layout to use
@@ -30,6 +43,10 @@ class TemplateInterpreter {
         }
 
         this.layout = layout;
+
+        elementsPolishers = [] as ArrayList<ElementsPolisher>
+
+        contentPolishers = [] as ArrayList<ContentPolisher>
 
     }
 
@@ -74,7 +91,7 @@ class TemplateInterpreter {
      * @return
      */
     public String getHtmlHead() {
-        return this.getTemplateContent().select("head").html();
+        return renderWithPolishers(this.getTemplateContent().select("head"))
     }
 
     /**
@@ -103,7 +120,15 @@ class TemplateInterpreter {
 
         freshDoc.select("#${templateLayout.mainContainerId}").html(content)
 
-        return freshDoc.select("body").html()
+        return renderWithPolishers(freshDoc.select("body"))
+    }
+
+    public void setContentPolisher(List<ContentPolisher> contentPolisherList) {
+        this.contentPolishers.addAll(contentPolisherList)
+    }
+
+    public void setElementsPolisher(List<ElementsPolisher> elementsPolisherList) {
+        this.elementsPolishers.addAll(elementsPolisherList)
     }
 
     /**
@@ -186,5 +211,44 @@ class TemplateInterpreter {
             return false
         }
     }
+
+    /**
+     * Render selected elements to HTML content, and trigger the polisher during the process
+     *
+     * @param elements are the selected elements will be polished through
+     * @return
+     */
+    protected String renderWithPolishers(Elements elements) {
+        return doPolishContent(doPolishElements(elements).html().trim())
+    }
+
+    /**
+     * Polish the given elements before it be rendered to HTML
+     *
+     * @param selectedElements are the elements need to be polished
+     * @return the elements after polish
+     */
+    protected Elements doPolishElements(Elements selectedElements) {
+        Elements cloneElements = selectedElements.clone()
+        elementsPolishers?.each { ElementsPolisher polisher ->
+            cloneElements = polisher.polishElements(cloneElements)
+        }
+        return cloneElements
+    }
+
+    /**
+     * Polish the HTML content before render onto the page
+     *
+     * @param htmlContent is the HTML content need to be polished
+     * @return the HTML content after polish, and ready to render on the page
+     */
+    protected String doPolishContent(String htmlContent) {
+        // maybe a performance issue because keeping to re-assign a string value, any good suggestion?
+        contentPolishers?.each { ContentPolisher polisher ->
+            htmlContent = polisher.polishContent(htmlContent)
+        }
+        return htmlContent
+    }
+
 
 }

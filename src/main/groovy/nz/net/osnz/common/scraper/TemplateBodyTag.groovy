@@ -1,5 +1,6 @@
 package nz.net.osnz.common.scraper
 
+import nz.net.osnz.common.scraper.polisher.ContentPolisher
 import nz.net.osnz.common.scraper.util.SpringBodyTagSupportAdapter
 import nz.net.osnz.common.scraper.util.TemplateLayout
 import org.slf4j.Logger
@@ -20,6 +21,8 @@ class TemplateBodyTag extends SpringBodyTagSupportAdapter {
 
     @Inject ScraperConfiguration scraperConfiguration
 
+    @Inject List<ContentPolisher> contentPolisherList
+
     /**
      * Called after this tag was closed off.
      *
@@ -32,6 +35,8 @@ class TemplateBodyTag extends SpringBodyTagSupportAdapter {
         JspWriter out = body.getEnclosingWriter()
 
         TemplateInterpreter templateInterpreter = new TemplateInterpreter(scraperConfiguration.getLayoutInformation(this.layout))
+
+        templateInterpreter.setContentPolisher(contentPolisherList)
 
         try {
             out.print(templateInterpreter.getBodyWithContent(body.string, templateLayout))

@@ -12,15 +12,14 @@ import javax.servlet.ServletContext
 import javax.servlet.ServletContextEvent
 import javax.servlet.ServletContextListener
 
-@Component
-public class PeriodicTemplateScraperTask {
+public class PeriodicTemplateScraperTask implements ServletContextListener {
 
     private final static Logger log = LoggerFactory.getLogger(PeriodicTemplateScraperTask.class);
 
     /**
-     * Refresh every 20 minutes
+     * Refresh every 4 hours
      */
-    public static final long INTERVAL_LENGTH = 1000 * 60 * 20;
+    public static final long INTERVAL_LENGTH = 1000 * 60 * 60 * 4;
 
     /**
      * Interval is running
@@ -32,8 +31,6 @@ public class PeriodicTemplateScraperTask {
      */
     private Thread intervalThread
 
-//    @Inject ServletContext servletContext;
-
     @Inject ScraperConfiguration scraperConfiguration
 
     /**
@@ -41,41 +38,30 @@ public class PeriodicTemplateScraperTask {
      *
      * @param servletContextEvent
      */
-//    @Override
-//    void contextInitialized(ServletContextEvent servletContextEvent) {
-//
-//        ApplicationContext appCtx = WebApplicationContextUtils.getWebApplicationContext(servletContextEvent.servletContext)
-//        appCtx.getAutowireCapableBeanFactory().autowireBean(this)
-//
-//        log.debug("Context initialized");
-//        this.intervalThread = new Thread([
-//                run: { ->
-//                    this.fireEvent(servletContextEvent.servletContext)
-//                }
-//        ] as Runnable
-//        ).start()
-//    }
+    @Override
+    void contextInitialized(ServletContextEvent servletContextEvent) {
 
-//    /**
-//     * Upon destroy make sure to kill the thread
-//     *
-//     * @param servletContextEvent
-//     */
-//    @Override
-//    void contextDestroyed(ServletContextEvent servletContextEvent) {
-//        this.intervalRunning = false
-//    }
-    @PostConstruct
-    public void postConstruct() {
+        ApplicationContext appCtx = WebApplicationContextUtils.getWebApplicationContext(servletContextEvent.servletContext)
+        appCtx.getAutowireCapableBeanFactory().autowireBean(this)
+
         log.debug("Context initialized");
         this.intervalThread = new Thread([
                 run: { ->
-                    this.fireEvent()
+                    this.fireEvent(servletContextEvent.servletContext)
                 }
         ] as Runnable
         ).start()
     }
 
+    /**
+     * Upon destroy make sure to kill the thread
+     *
+     * @param servletContextEvent
+     */
+    @Override
+    void contextDestroyed(ServletContextEvent servletContextEvent) {
+        this.intervalRunning = false
+    }
 
     /**
      * Fire an event every INTERVAL_LENGTH
