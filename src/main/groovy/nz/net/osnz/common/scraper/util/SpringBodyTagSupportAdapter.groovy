@@ -1,6 +1,7 @@
 package nz.net.osnz.common.scraper.util
 
 import org.springframework.context.ApplicationContext
+import org.springframework.web.context.support.SpringBeanAutowiringSupport
 import org.springframework.web.context.support.WebApplicationContextUtils
 
 import javax.servlet.jsp.tagext.BodyTagSupport
@@ -54,8 +55,9 @@ public abstract class SpringBodyTagSupportAdapter extends BodyTagSupport {
      */
     protected void initializeBeansIfNecessary() {
         if (!initialized) {
-            ApplicationContext appCtx = WebApplicationContextUtils.getWebApplicationContext(pageContext.servletContext)
-            appCtx.getAutowireCapableBeanFactory().autowireBean(this)
+//            ApplicationContext appCtx = WebApplicationContextUtils.getWebApplicationContext(pageContext.servletContext)
+//            appCtx.getAutowireCapableBeanFactory().autowireBean(this)
+            SpringBeanAutowiringSupport.processInjectionBasedOnServletContext(this, pageContext.servletContext);
             this.initialized = true
         }
     }

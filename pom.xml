@@ -5,7 +5,7 @@
     <parent>
         <groupId>nz.net.osnz.parent</groupId>
         <artifactId>groovy-parent</artifactId>
-        <version>2.2</version>
+        <version>2.5</version>
     </parent>
 
     <groupId>nz.net.osnz.common</groupId>

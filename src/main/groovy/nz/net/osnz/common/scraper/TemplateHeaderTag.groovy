@@ -3,6 +3,7 @@ package nz.net.osnz.common.scraper
 import nz.net.osnz.common.scraper.polisher.ContentPolisher
 import nz.net.osnz.common.scraper.polisher.ElementsPolisher
 import nz.net.osnz.common.scraper.util.SpringBodyTagSupportAdapter
+import org.springframework.beans.factory.annotation.Autowired
 
 import javax.inject.Inject
 
@@ -11,9 +12,11 @@ public class TemplateHeaderTag extends SpringBodyTagSupportAdapter {
 
     @Inject ScraperConfiguration scraperConfiguration
 
-    @Inject List<ContentPolisher> contentPolisherList
+    @Autowired(required = false)
+    List<ContentPolisher> contentPolisherList
 
-    @Inject List<ElementsPolisher> elementsPolisherList
+    @Autowired(required = false)
+    List<ElementsPolisher> elementsPolisherList
 
     /**
      * Layout to use

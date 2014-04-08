@@ -9,7 +9,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
-class TemplateInterpreter {
+public class TemplateInterpreter {
 
     /**
      * The parsed document
@@ -124,11 +124,15 @@ class TemplateInterpreter {
     }
 
     public void setContentPolisher(List<ContentPolisher> contentPolisherList) {
-        this.contentPolishers.addAll(contentPolisherList)
+        if (contentPolisherList) {
+            this.contentPolishers.addAll(contentPolisherList)
+        }
     }
 
     public void setElementsPolisher(List<ElementsPolisher> elementsPolisherList) {
-        this.elementsPolishers.addAll(elementsPolisherList)
+        if (elementsPolisherList) {
+            this.elementsPolishers.addAll(elementsPolisherList)
+        }
     }
 
     /**

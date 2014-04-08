@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 import java.text.ParseException
 
-@Component
+@Component('scraperConfiguration')
 public class ScraperConfiguration {
 
     /**

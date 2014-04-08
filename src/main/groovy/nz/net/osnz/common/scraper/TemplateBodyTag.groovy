@@ -5,6 +5,7 @@ import nz.net.osnz.common.scraper.util.SpringBodyTagSupportAdapter
 import nz.net.osnz.common.scraper.util.TemplateLayout
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 
 import javax.inject.Inject
 import javax.servlet.jsp.JspWriter
@@ -21,7 +22,8 @@ class TemplateBodyTag extends SpringBodyTagSupportAdapter {
 
     @Inject ScraperConfiguration scraperConfiguration
 
-    @Inject List<ContentPolisher> contentPolisherList
+    @Autowired(required = false)
+    List<ContentPolisher> contentPolisherList
 
     /**
      * Called after this tag was closed off.
